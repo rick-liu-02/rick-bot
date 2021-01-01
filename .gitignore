@@ -1,0 +1,6 @@
+**/node_modules/
+**/package-lock.json
+**/debug.log
+chat_data/*.json
+users.json
+bot_token.json
