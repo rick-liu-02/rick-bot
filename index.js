@@ -74,9 +74,9 @@ function generate(user, name, firstWord = '', maxLength = 100) {
 
 // Function that takes an array of words and tries to create a message from them, using any user
 function talk(words) {
-  let possibleUsers = Object.keys(users);
-
   for (const word of words) {
+    let possibleUsers = Object.keys(users);
+
     while (possibleUsers.length > 0) {
       let user = possibleUsers[Math.floor(Math.random() * possibleUsers.length)];
       possibleUsers.pop(possibleUsers.indexOf(user));
