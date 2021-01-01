@@ -197,6 +197,10 @@ for (const user of Object.keys(users)) {
 }
 let invalidMessage = 'Invalid command. Enter r!help for a list of commands.';
 
+// IDs that the bot will ignore messages from
+let blacklist = require('./blacklist.json').ids;
+blacklist.push('794336786415091782');  // Bot ignores its own messages
+
 // Runs when bot starts up
 client.on('ready', () => {
   console.log(`Online: ${client.user.tag}`);
@@ -205,13 +209,12 @@ client.on('ready', () => {
 // Runs every time a new message is posted
 client.on('message', msg => {
   try {
-    // Ignores bot's own messages
-    if (msg.author.id != '794336786415091782') {
-      const msgArr = msg.content.toLowerCase().split(' ');
-      msgArr.push('');
-
+    if (!blacklist.includes(msg.author.id)) {
       // If message is a bot command
-      if (msgArr[0].slice(0, 2) == 'r!') {
+      if (msg.content.toLowerCase().slice(0, 2) == 'r!') {
+        const msgArr = msg.content.toLowerCase().split(' ');
+        msgArr.push('');
+
         if (msgArr[0] == ('r!help')) {
           msg.channel.send(helpMessage);
 

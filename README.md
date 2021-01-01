@@ -4,9 +4,11 @@ A personal Discord bot. The main feature right now is the ability to generate no
 
 ## How to Use:
 
-Requires creating the files "users.json" and "bot_token.json" in the root folder.
+Requires placing .json files generated using DiscordChatExporter in "chat_data/". The bot uses these files to generate the text.
 
-"users.json" should be of the form:
+Also requires creating the files "users.json" and "bot_token.json" in this folder.
+
+"users.json" specifies the user-specific commands to be generated and the IDs that they will be based on:
 
     {
         "name1": {
@@ -23,10 +25,16 @@ Requires creating the files "users.json" and "bot_token.json" in the root folder
         ...
     }
 
-"bot_token.json" should be of the form:
+"bot_token.json" specifies the bot's token, which should never be shared publicly:
 
     {
       "token": "1234567890"
     }
 
-Also requires placing .json files generated using DiscordChatExporter in "chat_data/".
+Additionally, IDs of users that the bot will ignore can be added in "blacklist.json":
+
+    {
+        "ids": [
+            "0987654321"
+        ]
+    }
