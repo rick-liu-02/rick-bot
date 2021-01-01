@@ -54,71 +54,130 @@ for (const user of Object.keys(users)) {
   }
 }
 
-// Function that generates message
-function generate(user, name, firstWord = '', maxLength = 100) {
-  let word = firstWord;
-  if (word == '') {
-    word = user.firstWords[Math.floor(Math.random() * user.firstWords.length)];
-  }
-  let length = 0;
-  let string = '';
-
-  while (word != 'LAST_WORD' && length < maxLength) {
-    string += word + ' ';
-    word = user.words[word][Math.floor(Math.random() * user.words[word].length)];
-    length++;
-  }
-
-  return `**${name.charAt(0).toUpperCase() + name.slice(1)}:**\n` + string;
+// Capitalizes first letter of each word
+function capitalize(string) {
+  return string.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-// Function that takes an array of words and tries to create a message from them, using any user
-function talk(words) {
-  for (const word of words) {
-    let possibleUsers = Object.keys(users);
+// Removes symbols and converts to lowercase
+function removeSpecial(string) {
+  let arr = string.toLowerCase().replaceAll('\n', ' ').replaceAll('-', ' ').replaceAll('_', ' ').split('');
+  let index = 0;
+  let lastIndex = arr.length - 1;
 
-    while (possibleUsers.length > 0) {
-      let user = possibleUsers[Math.floor(Math.random() * possibleUsers.length)];
-      possibleUsers.pop(possibleUsers.indexOf(user));
-
-      let targetWords = Object.keys(users[user].words);
-
-      for (const targetWord of targetWords) {
-        if (word == targetWord.toLowerCase()) {
-          return generate(users[user], user, targetWord);
-        }
-      }
+  while (index <= lastIndex) {
+    if ('`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?'.includes(arr[index])) {
+      arr.splice(index, 1);
+      lastIndex--;
+    } else {
+      index++;
     }
   }
 
-  let user = Object.keys(users)[Math.floor(Math.random() * Object.keys(users).length)];
-  return generate(users[user], user);
+  return arr.join('');
 }
 
-// Function that takes an array of words and tries to create a message from them for each user
-function alltalk(words) {
+// Subfunction that generates message given user and optional desired first word
+function generate(user, firstWord = '') {
   let string = '';
-
-  for (const user of Object.keys(users)) {
+  // Stores next word to concatenate to string; random word in firstWords by default
+  let word = users[user].firstWords[Math.floor(Math.random() * users[user].firstWords.length)];
+  // Sets word to a specific word if the user has sent some form of firstWord in the past
+  if (firstWord != '') {
+    let targetWords = Object.keys(users[user].words);
+    // Checks for exact matches first
     let succeeded = false;
-    for (const word of words) {
-      let targetWords = Object.keys(users[user].words);
-
-      for (const targetWord of targetWords) {
-        if (word == targetWord.toLowerCase()) {
-          string += '\n\n' + generate(users[user], user, targetWord);
-          succeeded = true;
-          break;
-        }
-      }
-
-      if (succeeded) {
+    for (const targetWord of targetWords) {
+      if (firstWord == targetWord) {
+        word = targetWord;
+        succeeded = true;
         break;
       }
     }
-  
     if (!succeeded) {
-      string += '\n\n' + generate(users[user], user);
+      for (const targetWord of targetWords) {
+        if (removeSpecial(firstWord) == removeSpecial(targetWord)) {
+          word = targetWord;
+          break;
+        }
+      }
+    }
+  }
+
+  // Generates message with Markov chain until it ends naturally or reaches a length limit
+  let length = 0;
+  while (word != 'LAST_WORD' && length < 100) {
+    string += word + ' ';
+    word = users[user].words[word][Math.floor(Math.random() * users[user].words[word].length)];
+    length++;
+  }
+
+  return string;
+}
+
+// Function that takes an array of words and tries to create a message from them using a user
+function userTalk(user, words) {
+  let string = '';
+
+  // Tries words from left to right
+  for (const word of words) {
+    // Returns string if it starts with the word
+    string = generate(user, word);
+    if (removeSpecial(word) == removeSpecial(string.split(' ')[0])) {
+      return `**${capitalize(user)}:\n**` + string;
+    }
+  }
+
+  // Returns something anyways even if it doesn't start with a target word
+  return `**${capitalize(user)}:\n**` + string;
+}
+
+// Function that takes an array of words and tries to create a message from them using any user
+function anyTalk(words) {
+  let string = '';
+  let user = '';
+
+  // Tries words from left to right
+  for (const word of words) {
+    let possibleUsers = Object.keys(users);
+    while (possibleUsers.length > 0) {
+      // Picks random user
+      user = possibleUsers[Math.floor(Math.random() * possibleUsers.length)];
+      possibleUsers.pop(possibleUsers.indexOf(user));
+
+      // Returns string if it starts with the word
+      string = generate(user, word);
+      if (removeSpecial(word) == removeSpecial(string.split(' ')[0])) {
+        return `**${capitalize(user)}:\n**` + string;
+      }
+    }
+  }
+
+  // Returns something anyways even if it doesn't start with a target word
+  return `**${capitalize(user)}:\n**` + string;
+}
+
+// Function that takes an array of words and tries to create a message from them for all users
+function allTalk(words) {
+  let string = '';
+
+  for (const user of Object.keys(users)) {
+    let subString = '';
+
+    let succeeded = false;
+    for (const word of words) {
+      subString = generate(user, word);
+      // Concatenates subString to string if it starts with the word
+      if (removeSpecial(word) == removeSpecial(subString.split(' ')[0])) {
+        string += `\n\n**${capitalize(user)}:\n**` + subString;
+        succeeded = true;
+        break;
+      }
+    }
+
+    // Concatenates subString to string anyways even if it doesn't start with a target word
+    if (!succeeded) {
+      string += `\n\n**${capitalize(user)}:\n**` + subString;
     }
   }
 
@@ -136,10 +195,11 @@ let helpMessage = '**Commands:**\nr!help\nr!talk\nr!alltalk';
 for (const user of Object.keys(users)) {
   helpMessage += `\nr!${user}`;
 }
+let invalidMessage = 'Invalid command. Enter r!help for a list of commands.';
 
 // Runs when bot starts up
 client.on('ready', () => {
-  console.log(`Logged In: ${client.user.tag}`);
+  console.log(`Online: ${client.user.tag}`);
 });
 
 // Runs every time a new message is posted
@@ -147,34 +207,34 @@ client.on('message', msg => {
   try {
     // Ignores bot's own messages
     if (msg.author.id != '794336786415091782') {
-      const msgStr = msg.content.toLowerCase();
+      const msgArr = msg.content.toLowerCase().split(' ');
+      msgArr.push('');
 
       // If message is a bot command
-      if (msgStr.slice(0, 2) == 'r!') {
-        if (msgStr.split(' ')[0] == ('r!help')) {
+      if (msgArr[0].slice(0, 2) == 'r!') {
+        if (msgArr[0] == ('r!help')) {
           msg.channel.send(helpMessage);
 
-        } else if (msgStr.split(' ')[0] == ('r!talk')) {
-          msg.channel.send(talk(msgStr.split(' ').slice(1)));
+        } else if (msgArr[0] == ('r!talk')) {
+          msg.channel.send(anyTalk(msgArr.slice(1, 11)));
 
-        } else if (msgStr.split(' ')[0] == ('r!alltalk')) {
-          msg.channel.send(alltalk(msgStr.split(' ').slice(1)));
+        } else if (msgArr[0] == ('r!alltalk')) {
+          msg.channel.send(allTalk(msgArr.slice(1, 11)));
 
-        // Specific user commands
+        // Specific user commands and invalid command
         } else {
           let invalidCommand = true;
 
           for (const user of Object.keys(users)) {
-            if (msgStr.split(' ')[0] == (`r!${user}`)) {
-              msg.channel.send(generate(users[user], user));
+            if (msgArr[0] == (`r!${user}`)) {
+              msg.channel.send(userTalk(user, msgArr.slice(1, 11)));
               invalidCommand = false;
               break;
             }
           }
 
-          // Invalid command
           if (invalidCommand) {
-            msg.channel.send('Invalid command. Enter r!help for a list of commands.');
+            msg.channel.send(invalidMessage);
           }
         }
       }
