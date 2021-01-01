@@ -95,6 +95,36 @@ function talk(words) {
   return generate(users[user], user);
 }
 
+// Function that takes an array of words and tries to create a message from them for each user
+function alltalk(words) {
+  let string = '';
+
+  for (const user of Object.keys(users)) {
+    let succeeded = false;
+    for (const word of words) {
+      let targetWords = Object.keys(users[user].words);
+
+      for (const targetWord of targetWords) {
+        if (word == targetWord.toLowerCase()) {
+          string += '\n\n' + generate(users[user], user, targetWord);
+          succeeded = true;
+          break;
+        }
+      }
+
+      if (succeeded) {
+        break;
+      }
+    }
+  
+    if (!succeeded) {
+      string += '\n\n' + generate(users[user], user);
+    }
+  }
+
+  return string;
+}
+
 // Discord bot section
 
 const discord = require('discord.js');
@@ -102,7 +132,7 @@ const { SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG } = require('constants');
 const client = new discord.Client();
 
 // Generates r!help message
-let helpMessage = '**Commands:**\nr!help\nr!talk';
+let helpMessage = '**Commands:**\nr!help\nr!talk\nr!alltalk';
 for (const user of Object.keys(users)) {
   helpMessage += `\nr!${user}`;
 }
@@ -121,13 +151,14 @@ client.on('message', msg => {
 
       // If message is a bot command
       if (msgStr.slice(0, 2) == 'r!') {
-        // Help command
         if (msgStr.split(' ')[0] == ('r!help')) {
           msg.channel.send(helpMessage);
 
-        // Talk command
         } else if (msgStr.split(' ')[0] == ('r!talk')) {
           msg.channel.send(talk(msgStr.split(' ').slice(1)));
+
+        } else if (msgStr.split(' ')[0] == ('r!alltalk')) {
+          msg.channel.send(alltalk(msgStr.split(' ').slice(1)));
 
         // Specific user commands
         } else {
