@@ -77,7 +77,7 @@ function talk(words) {
   let possibleUsers = Object.keys(users);
 
   for (const word of words) {
-    for (let i = 0; i < Object.keys(users).length; i++) {
+    while (possibleUsers.length > 0) {
       let user = possibleUsers[Math.floor(Math.random() * possibleUsers.length)];
       possibleUsers.pop(possibleUsers.indexOf(user));
 
@@ -102,7 +102,7 @@ const { SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG } = require('constants');
 const client = new discord.Client();
 
 // Generates r!help message
-let helpMessage = '**Commands:**\nr!help\nr!talk [word(s)]';
+let helpMessage = '**Commands:**\nr!help\nr!talk';
 for (const user of Object.keys(users)) {
   helpMessage += `\nr!${user}`;
 }
