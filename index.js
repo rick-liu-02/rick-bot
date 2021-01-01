@@ -1,24 +1,6 @@
 // User data generation section
 
 const fs = require('fs');
-
-/*
-users.json should be of form:
-{
-    "name1": {
-        "ids": [
-            "1234567890"
-        ]
-    },
-    "name2": {
-        "ids": [
-            "2345678901",
-            "3456789012"
-        ]
-    },
-    ...
-}
-*/
 let users = require('./users.json');
 
 // For each user, generates the following properties: words, wordsLength, firstWords
@@ -141,10 +123,4 @@ client.on('message', msg => {
   }
 });
 
-/*
-bot_token.json should be of form:
-{
-  "token": "1234567890"
-}
-*/
 client.login(require('./bot_token.json').token);
