@@ -55,8 +55,11 @@ for (const user of Object.keys(users)) {
 }
 
 // Function that generates message
-function generate(user, maxLength = 100) {
-  let word = user.firstWords[Math.floor(Math.random() * user.firstWords.length)];
+function generate(user, name, firstWord = '', maxLength = 100) {
+  let word = firstWord;
+  if (word == '') {
+    word = user.firstWords[Math.floor(Math.random() * user.firstWords.length)];
+  }
   let length = 0;
   let string = '';
 
@@ -66,16 +69,40 @@ function generate(user, maxLength = 100) {
     length++;
   }
 
-  return string;
+  return `**${name.charAt(0).toUpperCase() + name.slice(1)}:**\n` + string;
+}
+
+// Function that takes an array of words and tries to create a message from them, using any user
+function talk(words) {
+  let possibleUsers = Object.keys(users);
+
+  for (const word of words) {
+    for (let i = 0; i < Object.keys(users).length; i++) {
+      let user = possibleUsers[Math.floor(Math.random() * possibleUsers.length)];
+      possibleUsers.pop(possibleUsers.indexOf(user));
+
+      let targetWords = Object.keys(users[user].words);
+
+      for (const targetWord of targetWords) {
+        if (word == targetWord.toLowerCase()) {
+          return generate(users[user], user, targetWord);
+        }
+      }
+    }
+  }
+
+  let user = Object.keys(users)[Math.floor(Math.random() * Object.keys(users).length)];
+  return generate(users[user], user);
 }
 
 // Discord bot section
 
 const discord = require('discord.js');
+const { SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG } = require('constants');
 const client = new discord.Client();
 
 // Generates r!help message
-let helpMessage = '**Commands:**\nr!help';
+let helpMessage = '**Commands:**\nr!help\nr!talk [word(s)]';
 for (const user of Object.keys(users)) {
   helpMessage += `\nr!${user}`;
 }
@@ -98,13 +125,17 @@ client.on('message', msg => {
         if (msgStr.split(' ')[0] == ('r!help')) {
           msg.channel.send(helpMessage);
 
+        // Talk command
+        } else if (msgStr.split(' ')[0] == ('r!talk')) {
+          msg.channel.send(talk(msgStr.split(' ').slice(1)));
+
         // Specific user commands
         } else {
           let invalidCommand = true;
 
           for (const user of Object.keys(users)) {
             if (msgStr.split(' ')[0] == (`r!${user}`)) {
-              msg.channel.send(`**${user.charAt(0).toUpperCase() + user.slice(1)}:**\n` + generate(users[user]));
+              msg.channel.send(generate(users[user], user));
               invalidCommand = false;
               break;
             }
